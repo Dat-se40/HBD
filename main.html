@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Thiệp mừng sinh nhật</title>
+  <style>
+    :root{
+      --bg:#e2a8cc;
+      --card-bg:linear-gradient(135deg,#ff9a9e 0%,#fad0c4 100%);
+      --note-bg:#fffbe6;
+      --accent:#ff6b81;
+      --shadow: rgba(16,24,40,0.12);
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:20px}
+
+    .stage{width:100%;max-width:980px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px}
+
+    /* Thiệp */
+    .card{
+      width:400px;height:300px;border-radius:14px;background:var(--card-bg);box-shadow:0 10px 30px var(--shadow);position:relative;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;transition:transform .45s cubic-bezier(.2,.9,.3,1);
+    }
+    .card:hover{transform:translateY(-8px) scale(1.02)}
+    .card .title{font-size:22px;color:white;font-weight:700;text-align:center;text-shadow:0 2px 6px rgba(0,0,0,0.15)}
+    .card .subtitle{font-size:12px;color:rgba(255,255,255,0.9);margin-top:8px}
+    .card .ribbon{position:absolute;left:-18px;top:18px;background:var(--accent);color:white;padding:6px 18px;transform:rotate(-18deg);box-shadow:0 6px 18px rgba(0,0,0,0.12);font-weight:700;border-radius:4px}
+
+    /* Notes container */
+    .notes-wrap{width:100%;min-height:360px;margin-top:30px;position:relative}
+    .note{
+      width:160px;height:120px;background:var(--note-bg);border-radius:8px;padding:12px;position:absolute;box-shadow:0 12px 36px rgba(16,24,40,0.12);transform-origin:center center;opacity:0;display:flex;flex-direction:column;gap:8px;overflow:hidden;border:1px solid rgba(0,0,0,0.06);cursor:pointer;
+    }
+    .note:before{content:'';position:absolute;left:10px;right:10px;top:0;height:6px;background:linear-gradient(90deg,rgba(0,0,0,0.03),rgba(0,0,0,0));border-bottom-left-radius:6px;border-bottom-right-radius:6px}
+    .note .msg{flex:1;font-size:13px;color:#222;line-height:1.3;overflow:hidden;text-overflow:ellipsis}
+    .note .from{font-size:11px;color:#666;text-align:right}
+
+    /* Modal overlay */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:0;pointer-events:none;transition:opacity .3s ease;backdrop-filter:blur(4px)}
+    .modal-overlay.active{opacity:1;pointer-events:all}
+    .modal-note{background:var(--note-bg);padding:32px;border-radius:12px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);transform:scale(.9);transition:transform .3s ease}
+    .modal-overlay.active .modal-note{transform:scale(1)}
+    .modal-note .msg{font-size:18px;color:#222;line-height:1.6;margin-bottom:16px}
+    .modal-note .from{font-size:14px;color:#666;text-align:right;font-style:italic}
+    .modal-note .close-btn{margin-top:24px;padding:10px 24px;background:var(--accent);color:white;border:none;border-radius:8px;cursor:pointer;width:100%;font-weight:600;transition:transform .2s}
+    .modal-note .close-btn:hover{transform:scale(1.05)}
+
+    /* Read indicator */
+    .note.read{opacity:0.6;filter:grayscale(0.3)}
+    .note.read:after{content:'✓';position:absolute;top:8px;right:8px;color:var(--accent);font-weight:bold;font-size:16px}
+
+    /* Fireworks */
+    .firework{position:fixed;width:4px;height:4px;border-radius:50%;pointer-events:none;z-index:10000}
+    @keyframes fireworkExplode{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--tx),var(--ty)) scale(0);opacity:0}}
+
+    /* Animations */
+    @keyframes popIn {from{transform:scale(.5) translateY(20px) rotate(-6deg);opacity:0} to{transform:scale(1) translateY(0) rotate(0);opacity:1}}
+    @keyframes floaty {0%{transform:translateY(0)}50%{transform:translateY(-6px)}100%{transform:translateY(0)}}
+
+    .note.show{animation:popIn .6s cubic-bezier(.2,.9,.3,1) forwards}
+    .note.float{animation:floaty 4s ease-in-out infinite}
+
+    .controls{margin-top:18px;display:flex;gap:10px}
+    .btn{padding:8px 12px;border-radius:8px;background:#fff;border:1px solid rgba(0,0,0,0.06);cursor:pointer;box-shadow:0 6px 18px rgba(16,24,40,0.06)}
+
+    .hidden{display:none}
+
+    /* Responsive */
+    @media (max-width:420px){.card{width:350px;height:350px}.note{width:200px;height:200px}}
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div id="card" class="card" title="Ấn để mở thiệp">
+      <div class="ribbon">To Hoàng Như</div>
+      <div>
+        <div class="title">생일 축하합니다!</div>
+        <div class="subtitle">숨은 편지를 찾다 🎉</div>
+      </div>
+    </div>
+
+    <div class="notes-wrap" id="notesWrap"></div>
+
+    <div class="controls">
+      <button id="resetBtn" class="btn hidden">Làm lại</button>
+    </div>
+  </div>
+
+  <!-- Modal để đọc note -->
+  <div id="modalOverlay" class="modal-overlay">
+    <div class="modal-note">
+      <div class="msg" id="modalMsg"></div>
+      <div class="from" id="modalFrom"></div>
+      <button class="close-btn" id="closeModal">Đóng</button>
+    </div>
+  </div>
+
+  <script>
+    const card = document.getElementById('card')
+    const notesWrap = document.getElementById('notesWrap')
+    const resetBtn = document.getElementById('resetBtn')
+    const modalOverlay = document.getElementById('modalOverlay')
+    const modalMsg = document.getElementById('modalMsg')
+    const modalFrom = document.getElementById('modalFrom')
+    const closeModal = document.getElementById('closeModal')
+
+    // Danh sách tin nhắn
+    const messages = [
+'Chúc Hoàng Như tuổi 19 thật rực rỡ nha',
+      'Tính t khô khan nên hong biết chúc gì nhiều hết á',
+      'Mặc dù 2 đứa mình rất ít khi nhắn tin nhưng mà có sao đâu',
+      'Uầy, mới đây mà 9 năm rồi nhỉ, từ lớp 5 giờ tới lớp 14 luôn rồi',
+      'Chừng ấy năm chơi chung nhma t ít chụp chung hình m ghê á',
+      'Ngộ he, chỉ học chung nhau lớp 5, mấy lớp khác toàn chơi chung lúc học thêm không',
+      'Nhưng có sao đâu, vẫn vui vẽ, vẫn chia sẻ bình thường',
+      'Thật sự t vô cùng trân trọng khoảng thời gian ấy :3',
+      'Hoàng Như trong mắt Đạt Nguyễn luôn mạnh mẽ, cứng rắn, đôi khi cũng có chút nóng nẩy, dễ xúc động.',
+      'Như vẫn là Như, vẫn là Nhữ, vẫn là cô ba, dù có đi đến đâu, đến môi trường nào ',
+      'Cô Ba sẽ mãi là tấm gương để bé Đản nôi theo, ham học hỏi, chịu thương chịu khó :3'
+    ]
+
+    let shown = false
+    let readMessages = new Set()
+    let allNotes = []
+    let notePositions = []
+
+    // === ÂM THANH ===
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+    
+    function playOpenSound() {
+      const osc = audioContext.createOscillator()
+      const gain = audioContext.createGain()
+      osc.connect(gain)
+      gain.connect(audioContext.destination)
+      
+      osc.frequency.setValueAtTime(800, audioContext.currentTime)
+      osc.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.3)
+      gain.gain.setValueAtTime(0.3, audioContext.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3)
+      
+      osc.start(audioContext.currentTime)
+      osc.stop(audioContext.currentTime + 0.3)
+    }
+
+    function playClickSound() {
+      const osc = audioContext.createOscillator()
+      const gain = audioContext.createGain()
+      osc.connect(gain)
+      gain.connect(audioContext.destination)
+      
+      osc.frequency.setValueAtTime(600, audioContext.currentTime)
+      gain.gain.setValueAtTime(0.2, audioContext.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1)
+      
+      osc.start(audioContext.currentTime)
+      osc.stop(audioContext.currentTime + 0.1)
+    }
+
+    function playFireworkSound() {
+      const noise = audioContext.createBufferSource()
+      const noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.5, audioContext.sampleRate)
+      const data = noiseBuffer.getChannelData(0)
+      for(let i = 0; i < data.length; i++) {
+        data[i] = Math.random() * 2 - 1
+      }
+      noise.buffer = noiseBuffer
+      
+      const noiseFilter = audioContext.createBiquadFilter()
+      noiseFilter.type = 'bandpass'
+      noiseFilter.frequency.value = 300
+      
+      const noiseGain = audioContext.createGain()
+      noiseGain.gain.setValueAtTime(0.3, audioContext.currentTime)
+      noiseGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5)
+      
+      noise.connect(noiseFilter)
+      noiseFilter.connect(noiseGain)
+      noiseGain.connect(audioContext.destination)
+      
+      noise.start(audioContext.currentTime)
+      noise.stop(audioContext.currentTime + 0.5)
+      
+      setTimeout(() => {
+        for(let i = 0; i < 5; i++) {
+          setTimeout(() => {
+            const osc = audioContext.createOscillator()
+            const gain = audioContext.createGain()
+            osc.connect(gain)
+            gain.connect(audioContext.destination)
+            
+            const freq = 1200 + Math.random() * 800
+            osc.frequency.setValueAtTime(freq, audioContext.currentTime)
+            gain.gain.setValueAtTime(0.15, audioContext.currentTime)
+            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2)
+            
+            osc.start(audioContext.currentTime)
+            osc.stop(audioContext.currentTime + 0.2)
+          }, i * 100)
+        }
+      }, 200)
+    }
+
+    function random(min, max){return Math.random()*(max-min)+min}
+
+    // Kiểm tra va chạm
+    function isOverlapping(x1, y1, w1, h1, x2, y2, w2, h2, padding = 20) {
+      return !(x1 + w1 + padding < x2 || 
+               x2 + w2 + padding < x1 || 
+               y1 + h1 + padding < y2 || 
+               y2 + h2 + padding < y1)
+    }
+
+    function findNonOverlappingPosition(wrapWidth, wrapHeight, noteWidth, noteHeight, maxAttempts = 50) {
+      for(let attempt = 0; attempt < maxAttempts; attempt++) {
+        const x = random(0, Math.max(0, wrapWidth - noteWidth))
+        const y = random(0, Math.max(0, wrapHeight - noteHeight))
+        
+        let overlap = false
+        for(let pos of notePositions) {
+          if(isOverlapping(x, y, noteWidth, noteHeight, pos.x, pos.y, pos.w, pos.h)) {
+            overlap = true
+            break
+          }
+        }
+        
+        if(!overlap) {
+          return { x, y }
+        }
+      }
+      
+      return {
+        x: random(0, Math.max(0, wrapWidth - noteWidth)),
+        y: random(0, Math.max(0, wrapHeight - noteHeight))
+      }
+    }
+
+    // Pháo hoa
+    function createFirework(x, y) {
+      const colors = ['#ff6b81', '#ffd93d', '#6bcf7f', '#4d96ff', '#ff85a2']
+      const particles = 30
+      
+      for(let i = 0; i < particles; i++) {
+        const firework = document.createElement('div')
+        firework.className = 'firework'
+        firework.style.left = x + 'px'
+        firework.style.top = y + 'px'
+        firework.style.background = colors[Math.floor(Math.random() * colors.length)]
+        
+        const angle = (Math.PI * 2 * i) / particles
+        const velocity = random(50, 150)
+        const tx = Math.cos(angle) * velocity
+        const ty = Math.sin(angle) * velocity
+        
+        firework.style.setProperty('--tx', tx + 'px')
+        firework.style.setProperty('--ty', ty + 'px')
+        firework.style.animation = 'fireworkExplode 1s ease-out forwards'
+        
+        document.body.appendChild(firework)
+        setTimeout(() => firework.remove(), 1000)
+      }
+    }
+
+    function launchFireworks() {
+      playFireworkSound()
+      
+      const count = 50
+      for(let i = 0; i < count; i++) {
+        setTimeout(() => {
+          const x = random(window.innerWidth * 0.2, window.innerWidth * 0.8)
+          const y = random(window.innerHeight * 0.2, window.innerHeight * 0.6)
+          createFirework(x, y)
+          
+          if(i > 0) playFireworkSound()
+        }, i * 300)
+      }
+    }
+
+    function showNotes(){
+      if(shown) return
+      shown = true
+      
+      playOpenSound()
+      notePositions = []
+      
+      card.style.transform = 'scale(.96) translateY(-10px)'
+      card.style.opacity = '0.28'
+
+      messages.forEach((msg, i)=>{
+        const note = document.createElement('div')
+        note.className = 'note'
+        note.dataset.index = i
+        
+        const noteWidth = 160
+        const noteHeight = 120
+        
+        const wrapRect = notesWrap.getBoundingClientRect()
+        const pos = findNonOverlappingPosition(wrapRect.width, wrapRect.height, noteWidth, noteHeight)
+        
+        note.style.left = pos.x + 'px'
+        note.style.top = pos.y + 'px'
+        
+        notePositions.push({ x: pos.x, y: pos.y, w: noteWidth, h: noteHeight })
+        
+        note.style.transform = `rotate(${random(-12,12)}deg)`
+
+        const p = document.createElement('div')
+        p.className = 'msg'
+        p.textContent = msg
+        const f = document.createElement('div')
+        f.className = 'from'
+        f.textContent = '— Bé Đản'
+        note.appendChild(p)
+        note.appendChild(f)
+
+        notesWrap.appendChild(note)
+        allNotes.push(note)
+
+        setTimeout(()=>{
+          note.classList.add('show')
+          if(Math.random()>0.5) note.classList.add('float')
+        }, 120 * i)
+
+        note.addEventListener('click', ()=>{
+          const msgIndex = parseInt(note.dataset.index)
+          
+          playClickSound()
+          
+          modalMsg.textContent = msg
+          modalFrom.textContent = '— Bé Đản'
+          modalOverlay.classList.add('active')
+          
+          if(!readMessages.has(msgIndex)) {
+            readMessages.add(msgIndex)
+            note.classList.add('read')
+            
+            if(readMessages.size === messages.length) {
+              setTimeout(() => {
+                launchFireworks()
+              }, 500)
+            }
+          }
+        })
+      })
+
+      resetBtn.classList.remove('hidden')
+    }
+
+    function resetAll(){
+      notesWrap.innerHTML = ''
+      shown = false
+      readMessages.clear()
+      allNotes = []
+      notePositions = []
+      card.style.transform = ''
+      card.style.opacity = '1'
+      resetBtn.classList.add('hidden')
+    }
+
+    closeModal.addEventListener('click', () => {
+      modalOverlay.classList.remove('active')
+    })
+
+    modalOverlay.addEventListener('click', (e) => {
+      if(e.target === modalOverlay) {
+        modalOverlay.classList.remove('active')
+      }
+    })
+
+    card.addEventListener('click', showNotes)
+    resetBtn.addEventListener('click', resetAll)
+  </script>
+</body>
+</html>
