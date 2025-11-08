@@ -4,71 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Thiệp mừng sinh nhật</title>
-  <style>
-    :root{
-      --bg:#e2a8cc;
-      --card-bg:linear-gradient(135deg,#ff9a9e 0%,#fad0c4 100%);
-      --note-bg:#fffbe6;
-      --accent:#ff6b81;
-      --shadow: rgba(16,24,40,0.12);
-      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:20px}
-
-    .stage{width:100%;max-width:980px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px}
-
-    /* Thiệp */
-    .card{
-      width:400px;height:300px;border-radius:14px;background:var(--card-bg);box-shadow:0 10px 30px var(--shadow);position:relative;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;transition:transform .45s cubic-bezier(.2,.9,.3,1);
-    }
-    .card:hover{transform:translateY(-8px) scale(1.02)}
-    .card .title{font-size:22px;color:white;font-weight:700;text-align:center;text-shadow:0 2px 6px rgba(0,0,0,0.15)}
-    .card .subtitle{font-size:12px;color:rgba(255,255,255,0.9);margin-top:8px}
-    .card .ribbon{position:absolute;left:-18px;top:18px;background:var(--accent);color:white;padding:6px 18px;transform:rotate(-18deg);box-shadow:0 6px 18px rgba(0,0,0,0.12);font-weight:700;border-radius:4px}
-
-    /* Notes container */
-    .notes-wrap{width:100%;min-height:360px;margin-top:30px;position:relative}
-    .note{
-      width:160px;height:120px;background:var(--note-bg);border-radius:8px;padding:12px;position:absolute;box-shadow:0 12px 36px rgba(16,24,40,0.12);transform-origin:center center;opacity:0;display:flex;flex-direction:column;gap:8px;overflow:hidden;border:1px solid rgba(0,0,0,0.06);cursor:pointer;
-    }
-    .note:before{content:'';position:absolute;left:10px;right:10px;top:0;height:6px;background:linear-gradient(90deg,rgba(0,0,0,0.03),rgba(0,0,0,0));border-bottom-left-radius:6px;border-bottom-right-radius:6px}
-    .note .msg{flex:1;font-size:13px;color:#222;line-height:1.3;overflow:hidden;text-overflow:ellipsis}
-    .note .from{font-size:11px;color:#666;text-align:right}
-
-    /* Modal overlay */
-    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:0;pointer-events:none;transition:opacity .3s ease;backdrop-filter:blur(4px)}
-    .modal-overlay.active{opacity:1;pointer-events:all}
-    .modal-note{background:var(--note-bg);padding:32px;border-radius:12px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);transform:scale(.9);transition:transform .3s ease}
-    .modal-overlay.active .modal-note{transform:scale(1)}
-    .modal-note .msg{font-size:18px;color:#222;line-height:1.6;margin-bottom:16px}
-    .modal-note .from{font-size:14px;color:#666;text-align:right;font-style:italic}
-    .modal-note .close-btn{margin-top:24px;padding:10px 24px;background:var(--accent);color:white;border:none;border-radius:8px;cursor:pointer;width:100%;font-weight:600;transition:transform .2s}
-    .modal-note .close-btn:hover{transform:scale(1.05)}
-
-    /* Read indicator */
-    .note.read{opacity:0.6;filter:grayscale(0.3)}
-    .note.read:after{content:'✓';position:absolute;top:8px;right:8px;color:var(--accent);font-weight:bold;font-size:16px}
-
-    /* Fireworks */
-    .firework{position:fixed;width:4px;height:4px;border-radius:50%;pointer-events:none;z-index:10000}
-    @keyframes fireworkExplode{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--tx),var(--ty)) scale(0);opacity:0}}
-
-    /* Animations */
-    @keyframes popIn {from{transform:scale(.5) translateY(20px) rotate(-6deg);opacity:0} to{transform:scale(1) translateY(0) rotate(0);opacity:1}}
-    @keyframes floaty {0%{transform:translateY(0)}50%{transform:translateY(-6px)}100%{transform:translateY(0)}}
-
-    .note.show{animation:popIn .6s cubic-bezier(.2,.9,.3,1) forwards}
-    .note.float{animation:floaty 4s ease-in-out infinite}
-
-    .controls{margin-top:18px;display:flex;gap:10px}
-    .btn{padding:8px 12px;border-radius:8px;background:#fff;border:1px solid rgba(0,0,0,0.06);cursor:pointer;box-shadow:0 6px 18px rgba(16,24,40,0.06)}
-
-    .hidden{display:none}
-
-    /* Responsive */
-    @media (max-width:420px){.card{width:350px;height:350px}.note{width:200px;height:200px}}
-  </style>
+  <link rel="stylesheet" href="main.css">
 </head>
 <body>
   <div class="stage">
@@ -83,7 +19,7 @@
     <div class="notes-wrap" id="notesWrap"></div>
 
     <div class="controls">
-      <button id="resetBtn" class="btn hidden">Làm lại</button>
+      <button id="resetBtn" class="btn hidden">Nữa nè</button>
     </div>
   </div>
 
@@ -107,7 +43,7 @@
 
     // Danh sách tin nhắn
     const messages = [
-'Chúc Hoàng Như tuổi 19 thật rực rỡ nha',
+      'Chúc Hoàng Như tuổi 19 thật rực rỡ nha',
       'Tính t khô khan nên hong biết chúc gì nhiều hết á',
       'Mặc dù 2 đứa mình rất ít khi nhắn tin nhưng mà có sao đâu',
       'Uầy, mới đây mà 9 năm rồi nhỉ, từ lớp 5 giờ tới lớp 14 luôn rồi',
@@ -117,7 +53,8 @@
       'Thật sự t vô cùng trân trọng khoảng thời gian ấy :3',
       'Hoàng Như trong mắt Đạt Nguyễn luôn mạnh mẽ, cứng rắn, đôi khi cũng có chút nóng nẩy, dễ xúc động.',
       'Như vẫn là Như, vẫn là Nhữ, vẫn là cô ba, dù có đi đến đâu, đến môi trường nào ',
-      'Cô Ba sẽ mãi là tấm gương để bé Đản nôi theo, ham học hỏi, chịu thương chịu khó :3'
+      'Cô Ba sẽ mãi là tấm gương để bé Đản nôi theo, ham học hỏi, chịu thương chịu khó :3',
+      'Kiên cường, xinh đẹp, khỏe mạnh và thật nhiều mai mắn'
     ]
 
     let shown = false
@@ -203,7 +140,6 @@
 
     function random(min, max){return Math.random()*(max-min)+min}
 
-    // Kiểm tra va chạm
     function isOverlapping(x1, y1, w1, h1, x2, y2, w2, h2, padding = 20) {
       return !(x1 + w1 + padding < x2 || 
                x2 + w2 + padding < x1 || 
@@ -235,7 +171,6 @@
       }
     }
 
-    // Pháo hoa
     function createFirework(x, y) {
       const colors = ['#ff6b81', '#ffd93d', '#6bcf7f', '#4d96ff', '#ff85a2']
       const particles = 30
